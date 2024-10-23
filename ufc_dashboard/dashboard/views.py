@@ -6,12 +6,12 @@ from django.http import JsonResponse
 import plotly.express as px
 import numpy as np
 
+# Load and preprocess data
 data_path = '../data/merged_ufc_data.csv'
 df = pd.read_csv(data_path)
 df = df.dropna(subset=['date'])
 
 df['date'] = pd.to_datetime(df['date'])
-
 df['fight_id'] = df.apply(lambda row: f"{row['date'].date()}_{row['R_fighter']}_vs_{row['B_fighter']}", axis=1)
 
 def intro_view(request):
@@ -51,21 +51,45 @@ def update_fight_info(request):
         'Knockdowns': int(selected_fight_data['B_avg_KD'])
     }
 
+    # Update red corner bar chart
     red_fig = go.Figure(data=[go.Bar(
         x=list(red_metrics.keys()),
         y=list(red_metrics.values()),
-        marker_color='red',
+        marker=dict(
+            color=list(red_metrics.values()),  # Set color based on values
+            colorscale='Reds',
+            line=dict(color='rgba(255, 99, 71, 1.0)', width=2)
+        ),
         name='Red Corner'
     )])
-    red_fig.update_layout(title='Red Corner Metrics', yaxis_title='Metric Value')
+    red_fig.update_layout(
+        title='Red Corner Metrics',
+        yaxis_title='Metric Value',
+        plot_bgcolor='#2a2a3c',
+        paper_bgcolor='#2a2a3c',
+        font=dict(color='#e0e0e0'),
+        transition=dict(duration=500, easing='cubic-in-out')
+    )
 
+    # Update blue corner bar chart
     blue_fig = go.Figure(data=[go.Bar(
         x=list(blue_metrics.keys()),
         y=list(blue_metrics.values()),
-        marker_color='blue',
+        marker=dict(
+            color=list(blue_metrics.values()),  # Set color based on values
+            colorscale='Blues',
+            line=dict(color='rgba(0, 123, 255, 1.0)', width=2)
+        ),
         name='Blue Corner'
     )])
-    blue_fig.update_layout(title='Blue Corner Metrics', yaxis_title='Metric Value')
+    blue_fig.update_layout(
+        title='Blue Corner Metrics',
+        yaxis_title='Metric Value',
+        plot_bgcolor='#2a2a3c',
+        paper_bgcolor='#2a2a3c',
+        font=dict(color='#e0e0e0'),
+        transition=dict(duration=500, easing='cubic-in-out')
+    )
 
     return JsonResponse({
         'fight_name': f"{selected_fight_data['R_fighter']} vs. {selected_fight_data['B_fighter']}",
@@ -73,6 +97,81 @@ def update_fight_info(request):
         'red_chart': red_fig.to_plotly_json(),
         'blue_chart': blue_fig.to_plotly_json()
     })
+
+def update_fight_info(request):
+    try:
+        fight_id = request.GET.get('fight_id')
+        if not fight_id:
+            return JsonResponse({'error': 'No fight ID provided'}, status=400)
+
+        # Get the selected fight data
+        selected_fight_data = df[df['fight_id'] == fight_id].iloc[0]
+
+        ppv = int(selected_fight_data['PPV'])
+
+        # Define red and blue metrics
+        red_metrics = {
+            'Significant Strikes': int(selected_fight_data['R_avg_SIG_STR_att']),
+            'Takedown Attempts': int(selected_fight_data['R_avg_TD_att']),
+            'Knockdowns': int(selected_fight_data['R_avg_KD'])
+        }
+
+        blue_metrics = {
+            'Significant Strikes': int(selected_fight_data['B_avg_SIG_STR_att']),
+            'Takedown Attempts': int(selected_fight_data['B_avg_TD_att']),
+            'Knockdowns': int(selected_fight_data['B_avg_KD'])
+        }
+
+        # Create the red corner bar chart using a colorscale
+        red_fig = go.Figure(data=[go.Bar(
+            x=list(red_metrics.keys()),
+            y=list(red_metrics.values()),
+            marker=dict(
+                color=list(red_metrics.values()),  # Use metric values for colorscale
+                colorscale='Reds',  # Apply colorscale
+                colorbar=dict(title='Metric Value')
+            ),
+            name='Red Corner'
+        )])
+        red_fig.update_layout(
+            title='Red Corner Metrics',
+            yaxis_title='Metric Value',
+            plot_bgcolor='#2a2a3c',
+            paper_bgcolor='#2a2a3c',
+            font=dict(color='#e0e0e0'),
+            transition=dict(duration=500, easing='cubic-in-out')
+        )
+
+        # Create the blue corner bar chart using a colorscale
+        blue_fig = go.Figure(data=[go.Bar(
+            x=list(blue_metrics.keys()),
+            y=list(blue_metrics.values()),
+            marker=dict(
+                color=list(blue_metrics.values()),  # Use metric values for colorscale
+                colorscale='Blues',  # Apply colorscale
+                colorbar=dict(title='Metric Value')
+            ),
+            name='Blue Corner'
+        )])
+        blue_fig.update_layout(
+            title='Blue Corner Metrics',
+            yaxis_title='Metric Value',
+            plot_bgcolor='#2a2a3c',
+            paper_bgcolor='#2a2a3c',
+            font=dict(color='#e0e0e0'),
+            transition=dict(duration=500, easing='cubic-in-out')
+        )
+
+        return JsonResponse({
+            'fight_name': f"{selected_fight_data['R_fighter']} vs. {selected_fight_data['B_fighter']}",
+            'ppv': ppv,
+            'red_chart': red_fig.to_plotly_json(),
+            'blue_chart': blue_fig.to_plotly_json()
+        })
+
+    except Exception as e:
+        print(f"Error in update_fight_info: {e}")
+        return JsonResponse({'error': 'An error occurred while updating fight info.'}, status=500)
 
 
 def trend_analysis(request):
@@ -96,7 +195,15 @@ def trend_analysis(request):
         scatter_fig = px.scatter(
             filtered_df, x='total_sig_strikes', y='PPV', trendline='ols',
             title='Total Significant Strikes vs. PPV',
-            labels={'total_sig_strikes': 'Total Significant Strikes', 'PPV': 'PPV Buys'}
+            labels={'total_sig_strikes': 'Total Significant Strikes', 'PPV': 'PPV Buys'},
+            color_discrete_sequence=['#2ecc71']
+        )
+        scatter_fig.update_traces(marker=dict(size=10, symbol='circle-open', line=dict(width=2, color='#27ae60')))
+        scatter_fig.update_layout(
+            plot_bgcolor='#2a2a3c',
+            paper_bgcolor='#2a2a3c',
+            font=dict(color='#e0e0e0'),
+            transition=dict(duration=500, easing='cubic-in-out')
         )
 
         scatter_plot = scatter_fig.to_plotly_json()
@@ -124,6 +231,12 @@ def trend_analysis(request):
                 'Both Low': 'gray'
             }
         )
+        bar_fig.update_layout(
+            plot_bgcolor='#2a2a3c',
+            paper_bgcolor='#2a2a3c',
+            font=dict(color='#e0e0e0'),
+            transition=dict(duration=500, easing='cubic-in-out')
+        )
 
         bar_chart = bar_fig.to_plotly_json()
         bar_chart['data'] = [convert_ndarray_to_list(trace) for trace in bar_chart['data']]
@@ -139,9 +252,6 @@ def trend_analysis(request):
         return JsonResponse({'error': 'An error occurred while processing trend analysis.'}, status=500)
 
 def convert_ndarray_to_list(obj):
-    """
-    Recursively convert NumPy ndarrays to lists.
-    """
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, dict):
