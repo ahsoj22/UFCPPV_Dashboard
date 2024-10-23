@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Dashboard</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> 
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1 class="container">UFC Dashboard</h1>
+
+    <div class="container">
+        <label for="fight-select">Select Fight:</label>
+        <select id="fight-select">
+            <option value="" disabled selected>Select a fight</option>
+            {% for option in fight_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="fight-name" class="container"></div>
+
+    <div class="ppv-display-card" id="ppv-display"></div>
+
+    <div class="chart-container">
+        <div class="card">
+            <div class="card-header">Red Corner Metrics</div>
+            <div id="red-chart" class="chart"></div>
+        </div>
+        <div class="card">
+            <div class="card-header">Blue Corner Metrics</div>
+            <div id="blue-chart" class="chart"></div>
+        </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="trend-title container">Trend Analysis from 2003 - 2017</div>
+
+    <div class="container mb-4">
+        <label for="sig-strikes-select">Significant Strikes:</label>
+        <select id="sig-strikes-select">
+            <option value="all" selected>All</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+        </select>
+
+        <label for="takedowns-select">Takedowns:</label>
+        <select id="takedowns-select">
+            <option value="all" selected>All</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+        </select>
+    </div>
+
+    <div class="chart-container">
+        <div class="card">
+            <div class="card-header">Total Significant Strikes vs. PPV</div>
+            <div id="scatter-plot" class="chart"></div>
+        </div>
+        <div class="card">
+            <div class="card-header">Average PPV by Metrics</div>
+            <div id="bar-chart" class="chart"></div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('fight-select').addEventListener('change', function() {
+            const selectedFightId = this.value;
+            if (!selectedFightId) return;
+    
+            fetch(`/update_fight_info/?fight_id=${encodeURIComponent(selectedFightId)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('fight-name').textContent = data.fight_name;
+    
+                    document.getElementById('ppv-display').textContent = `PPV Buys: ${data.ppv}`;
+    
+                    Plotly.newPlot('red-chart', data.red_chart.data, data.red_chart.layout);
+                    Plotly.newPlot('blue-chart', data.blue_chart.data, data.blue_chart.layout);
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    
+        document.addEventListener('DOMContentLoaded', function() {
+        fetch('/trend_analysis/')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.scatter_plot && data.bar_chart) {
+                    Plotly.newPlot('scatter-plot', data.scatter_plot.data, data.scatter_plot.layout);
+
+                    Plotly.newPlot('bar-chart', data.bar_chart.data, data.bar_chart.layout);
+                } else {
+                    console.error('Invalid data structure:', data);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+
+        function updateTrendAnalysis() {
+            const sigStrikesFilter = document.getElementById('sig-strikes-select').value;
+            const takedownsFilter = document.getElementById('takedowns-select').value;
+
+            fetch(`/trend_analysis/?sig_strikes=${sigStrikesFilter}&takedowns=${takedownsFilter}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+            .then(data => {
+                Plotly.newPlot('scatter-plot', data.scatter_plot.data, data.scatter_plot.layout);
+
+                Plotly.newPlot('bar-chart', data.bar_chart.data, data.bar_chart.layout);
+                })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('sig-strikes-select').addEventListener('change', updateTrendAnalysis);
+        document.getElementById('takedowns-select').addEventListener('change', updateTrendAnalysis);
+
+        updateTrendAnalysis();
+    });
+    </script>
+    
+</body>
+</html>

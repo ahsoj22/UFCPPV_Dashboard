@@ -1,0 +1,102 @@
+/* Base styling for the entire dashboard */
+body {
+    background-color: #1b1f23;
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    text-align: center;
+    margin: 20px auto;
+}
+
+.chart-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* Card styling */
+.card {
+    background-color: #24292e;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    margin: 15px;
+    flex: 1;
+    max-width: 45%;
+    color: #ffffff;
+}
+
+.ppv-display-card {
+    background-color: #3a3f44;
+    color: #fff;
+    font-size: 24px;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+#fight-name {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Dropdown and labels */
+label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+select {
+    margin: 0 10px;
+    padding: 5px 10px;
+    background-color: #2d333b;
+    color: #ffffff;
+    border: 1px solid #444c56;
+    border-radius: 5px;
+}
+
+/* Separator */
+.separator {
+    margin: 20px 0;
+    border-top: 2px solid #444c56;
+}
+
+/* Trend title */
+.trend-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 20px 0;
+    color: #6cb6ff;
+}
+
+/* Chart styling */
+.chart {
+    width: 100%;
+    height: 400px;
+}
+
+/* Card hover effects */
+.card:hover, .ppv-display-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* Plotly chart styling */
+#red-chart, #blue-chart, #scatter-plot, #bar-chart {
+    border-radius: 10px;
+}
+
+/* Card header styling */
+.card-header {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
